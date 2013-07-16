@@ -90,7 +90,8 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
     nfc_nci.bcm2079x.default \
     NfcNci \
-    Tag
+    Tag \
+    com.android.nfc_extras
 
 # NFC access control + feature files + configuration
 PRODUCT_COPY_FILES += \
