@@ -67,10 +67,18 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-struct pcm_config pcm_config = {
+struct pcm_config pcm_config_fast = {
     .channels = 2,
-    .rate = 44100,
-    .period_size = 256,
+    .rate = 48000,
+    .period_size = 240,
+    .period_count = 2,
+    .format = PCM_FORMAT_S16_LE,
+};
+
+struct pcm_config pcm_config_deep = {
+    .channels = 2,
+    .rate = 48000,
+    .period_size = 3840,
     .period_count = 2,
     .format = PCM_FORMAT_S16_LE,
 };
@@ -95,18 +103,6 @@ struct pcm_config pcm_config_sco = {
     .channels = 1,
     .rate = 8000,
     .period_size = 128,
-    .period_count = 2,
-    .format = PCM_FORMAT_S16_LE,
-};
-
-struct pcm_config pcm_config_deep = {
-    .channels = 2,
-    .rate = 44100,
-    /* FIXME This is an arbitrary number, may change.
-     * Dynamic configuration based on screen on/off is not implemented;
-     * let's see what power consumption is first to see if necessary.
-     */
-    .period_size = 8192,
     .period_count = 2,
     .format = PCM_FORMAT_S16_LE,
 };
@@ -1623,6 +1619,16 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
         type = OUTPUT_LOW_LATENCY;
     }
 
+    if (flags & AUDIO_OUTPUT_FLAG_DEEP_BUFFER) {
+        out->config = pcm_config_deep;
+        out->pcm_device = PCM_DEVICE;
+        type = OUTPUT_DEEP_BUF;
+    } else {
+        out->config = pcm_config_fast;
+        out->pcm_device = PCM_DEVICE;
+        type = OUTPUT_LOW_LATENCY;
+    }
+
     out->stream.common.get_sample_rate = out_get_sample_rate;
     out->stream.common.set_sample_rate = out_set_sample_rate;
     out->stream.common.get_buffer_size = out_get_buffer_size;
@@ -1940,8 +1946,8 @@ static int adev_open(const hw_module_t* module, const char* name,
 
     char value[PROPERTY_VALUE_MAX];
     if (property_get("audio_hal.period_size", value, NULL) > 0) {
-        pcm_config.period_size = atoi(value);
-        pcm_config_in.period_size = pcm_config.period_size;
+        pcm_config_fast.period_size = atoi(value);
+        pcm_config_in.period_size = pcm_config_fast.period_size;
     }
     if (property_get("audio_hal.in_period_size", value, NULL) > 0)
         pcm_config_in.period_size = atoi(value);
