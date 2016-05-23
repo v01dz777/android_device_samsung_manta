@@ -1455,14 +1455,16 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
         out->config.channels = audio_channel_count_from_out_mask(config->channel_mask);
         out->pcm_device = PCM_DEVICE;
         type = OUTPUT_HDMI;
-    } else if (flags & AUDIO_OUTPUT_FLAG_DEEP_BUFFER) {
+    } else if (flags & AUDIO_OUTPUT_FLAG_FAST) {
+        ALOGV("*** %s: Fast buffer pcm config", __func__);
+        out->config = pcm_config_fast;
+        out->pcm_device = PCM_DEVICE;
+        type = OUTPUT_LOW_LATENCY;
+    } else {
+        ALOGV("*** %s: Deep buffer pcm config", __func__);
         out->config = pcm_config_deep;
         out->pcm_device = PCM_DEVICE_DEEP;
         type = OUTPUT_DEEP_BUF;
-    } else {
-        out->config = pcm_config;
-        out->pcm_device = PCM_DEVICE;
-        type = OUTPUT_LOW_LATENCY;
     }
 
     if (flags & AUDIO_OUTPUT_FLAG_DEEP_BUFFER) {
