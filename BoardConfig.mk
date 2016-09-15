@@ -35,6 +35,8 @@ TARGET_CPU_VARIANT := cortex-a15
 #TARGET_KERNEL_CONFIG := manta_defconfig
 TARGET_KERNEL_CONFIG := omni_manta_defconfig
 TARGET_KERNEL_SOURCE := kernel/samsung/manta
+KERNEL_TOOLCHAIN := $(ANDROID_BUILD_TOP)/prebuilts/gcc/$(HOST_OS)-x86/arm/arm-eabi-4.8/bin
+KERNEL_TOOLCHAIN_PREFIX := arm-eabi-
 
 #Bluetooth
 BOARD_HAVE_BLUETOOTH := true
