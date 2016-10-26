@@ -98,3 +98,5 @@ TARGET_BOOTANIMATION_USE_RGB565 := true
 
 # Seccomp filters
 BOARD_SECCOMP_POLICY += device/samsung/manta/seccomp
+
+TARGET_DISABLE_OMX_VIDEO_CROP_OUTPUT := true
