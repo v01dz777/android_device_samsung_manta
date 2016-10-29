@@ -114,8 +114,6 @@ BOARD_SEPOLICY_DIRS += device/samsung/manta/sepolicy
 
 BOARD_SECCOMP_POLICY += device/samsung/manta/seccomp
 
-MALLOC_SVELTE := true
-
 BOARD_INV_LIBMLLITE_FROM_SOURCE := true
 
 TARGET_DISABLE_OMX_VIDEO_CROP_OUTPUT := true
