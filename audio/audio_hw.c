@@ -205,6 +205,7 @@ struct stream_in {
     struct audio_device *dev;
 
     int64_t last_read_time_us;
+    int64_t frames_read; /* total frames read, not cleared when entering standby */
 };
 
 #define STRING_TO_ENUM(string) { #string, string }
@@ -509,14 +510,18 @@ static void start_bt_sco(struct audio_device *adev) {
         ALOGE("pcm_open(SCO_OUT) failed: %s", pcm_get_error(adev->pcm_sco_out));
         goto err_sco_out;
     }
-    adev->pcm_voice_in = pcm_open(PCM_CARD, PCM_DEVICE_VOICE, PCM_IN,
-                                 &pcm_config_sco);
+    adev->pcm_voice_in = pcm_open(PCM_CARD,
+                                  PCM_DEVICE_VOICE,
+                                  PCM_IN | PCM_MONOTONIC,
+                                  &pcm_config_sco);
     if (adev->pcm_voice_in && !pcm_is_ready(adev->pcm_voice_in)) {
         ALOGE("pcm_open(VOICE_IN) failed: %s", pcm_get_error(adev->pcm_voice_in));
         goto err_voice_in;
     }
-    adev->pcm_sco_in = pcm_open(PCM_CARD, PCM_DEVICE_SCO, PCM_IN,
-                               &pcm_config_sco);
+    adev->pcm_sco_in = pcm_open(PCM_CARD,
+                                PCM_DEVICE_SCO,
+                                PCM_IN | PCM_MONOTONIC,
+                                &pcm_config_sco);
     if (adev->pcm_sco_in && !pcm_is_ready(adev->pcm_sco_in)) {
         ALOGE("pcm_open(SCO_IN) failed: %s", pcm_get_error(adev->pcm_sco_in));
         goto err_sco_in;
@@ -621,7 +626,10 @@ static int start_input_stream(struct stream_in *in)
 {
     struct audio_device *adev = in->dev;
 
-    in->pcm = pcm_open(PCM_CARD, PCM_DEVICE, PCM_IN, in->config);
+    in->pcm = pcm_open(PCM_CARD,
+                       PCM_DEVICE,
+                       PCM_IN | PCM_MONOTONIC,
+                       in->config);
 
     if (in->pcm && !pcm_is_ready(in->pcm)) {
         ALOGE("pcm_open() failed: %s", pcm_get_error(in->pcm));
@@ -1421,6 +1429,8 @@ exit:
         // On the subsequent in_read(), we measure the elapsed time spent in
         // the recording thread. This is subtracted from the sleep estimate based on frames,
         // thereby accounting for fill in the alsa buffer during the interim.
+    } else {
+        in->frames_read += bytes / audio_stream_in_frame_size(stream);
     }
 
     pthread_mutex_unlock(&in->lock);
@@ -1432,8 +1442,33 @@ static uint32_t in_get_input_frames_lost(struct audio_stream_in *stream)
     return 0;
 }
 
-static int in_add_audio_effect(const struct audio_stream *stream,
-                               effect_handle_t effect)
+static int in_get_capture_position(const struct audio_stream_in *stream,
+                                   int64_t *frames, int64_t *time)
+{
+    if (stream == NULL || frames == NULL || time == NULL) {
+        return -EINVAL;
+    }
+
+    struct stream_in *in = (struct stream_in *)stream;
+    int ret = -ENOSYS;
+
+    pthread_mutex_lock(&in->lock);
+    if (in->pcm) {
+        struct timespec timestamp;
+        unsigned int avail;
+        if (pcm_get_htimestamp(in->pcm, &avail, &timestamp) == 0) {
+            *frames = in->frames_read + avail;
+            *time = timestamp.tv_sec * 1000000000LL + timestamp.tv_nsec;
+            ret = 0;
+        }
+    }
+
+    pthread_mutex_unlock(&in->lock);
+    return ret;
+}
+
+static int in_add_audio_effect(const struct audio_stream *stream __unused,
+                               effect_handle_t effect __unused)
 {
     struct stream_in *in = (struct stream_in *)stream;
     effect_descriptor_t descr;
@@ -1711,6 +1746,7 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
     in->stream.set_gain = in_set_gain;
     in->stream.read = in_read;
     in->stream.get_input_frames_lost = in_get_input_frames_lost;
+    in->stream.get_capture_position = in_get_capture_position;
 
     in->dev = adev;
     in->standby = true;
@@ -1721,6 +1757,7 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
     in->io_handle = handle;
     in->channel_mask = config->channel_mask;
     in->flags = flags;
+    // in->frames_read = 0;
     struct pcm_config *pcm_config = flags & AUDIO_INPUT_FLAG_FAST ?
             &pcm_config_in_low_latency : &pcm_config_in;
     in->config = pcm_config;
