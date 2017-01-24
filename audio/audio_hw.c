@@ -1263,8 +1263,11 @@ static void do_in_standby(struct stream_in *in)
     struct audio_device *adev = in->dev;
 
     if (!in->standby) {
-        pcm_close(in->pcm);
-        in->pcm = NULL;
+        in->standby = true;
+        if (in->pcm != NULL) {
+            pcm_close(in->pcm);
+            in->pcm = NULL;
+        }
 
         if (in->device & AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET)
             stop_bt_sco(adev);
