@@ -21,21 +21,18 @@
 # lines, full and manta, hence its name.
 #
 
-# Live Wallpapers
+# Build packages
 PRODUCT_PACKAGES += \
-        LiveWallpapers \
-        LiveWallpapersPicker \
-        MagicSmokeWallpapers \
-        VisualizationWallpapers \
-        librs_jni
+        Launcher3
 
 PRODUCT_PROPERTY_OVERRIDES := \
         net.dns1=8.8.8.8 \
         net.dns2=8.8.4.4
 
 # Inherit from those products. Most specific first.
-$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base.mk)
 $(call inherit-product, device/samsung/manta/device.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base.mk)
+$(call inherit-product-if-exists, vendor/samsung/manta/manta-vendor.mk)
 
 PRODUCT_NAME := full_manta
 PRODUCT_DEVICE := manta
