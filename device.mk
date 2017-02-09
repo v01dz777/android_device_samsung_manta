@@ -157,6 +157,15 @@ $(call inherit-product, frameworks/native/build/tablet-10in-xhdpi-2048-dalvik-he
 PRODUCT_PROPERTY_OVERRIDES += \
     media.aac_51_output_enabled=true
 
+# facelock props
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.facelock.black_timeout=700 \
+    ro.facelock.det_timeout=1500 \
+    ro.facelock.rec_timeout=2500 \
+    ro.facelock.lively_timeout=2500 \
+    ro.facelock.est_max_time=500 \
+    ro.facelock.use_intro_anim=true
+
 # for off charging mode
 PRODUCT_PACKAGES += \
     charger_res_images
