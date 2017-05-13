@@ -69,7 +69,7 @@
 
 struct pcm_config pcm_config_fast = {
     .channels = 2,
-    .rate = 48000,
+    .rate = 44100,
     .period_size = 240,
     .period_count = 2,
     .format = PCM_FORMAT_S16_LE,
@@ -77,7 +77,7 @@ struct pcm_config pcm_config_fast = {
 
 struct pcm_config pcm_config_deep = {
     .channels = 2,
-    .rate = 48000,
+    .rate = 44100,
     .period_size = 3840,
     .period_count = 2,
     .format = PCM_FORMAT_S16_LE,
